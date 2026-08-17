@@ -1,4 +1,4 @@
-const CACHE_NAME = 'carenderia-pos-v2026-08-17-2';
+const CACHE_NAME = 'carenderia-pos-v2026-08-17-3';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
