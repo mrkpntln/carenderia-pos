@@ -2185,7 +2185,7 @@ setTimeout(updateSearchClear,100);
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('./service-worker.js?v=20260817-2',{updateViaCache:'none'})
+    navigator.serviceWorker.register('./service-worker.js?v=20260818-4',{updateViaCache:'none'})
       .then(function (registration) {
         registration.update().catch(function(){});
         registration.addEventListener('updatefound', function () {
