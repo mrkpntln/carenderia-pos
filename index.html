@@ -528,6 +528,60 @@ html,body{
 
 </head>
 <body>
+ 
+<!-- MAINTENANCE SCREEN -->
+<div id="maintenanceScreen" style="
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:999999;
+  background:#17251E;
+  color:white;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:24px;
+  box-sizing:border-box;
+  font-family:Arial,sans-serif;
+">
+  <div style="max-width:480px">
+    <div style="font-size:64px">🔧</div>
+    <h1 style="font-size:30px;margin:20px 0 12px">
+      We'll Be Back Soon!
+    </h1>
+    <p style="font-size:16px;line-height:1.7;color:#D3E0D5">
+      Carenderia De Pantaleon POS is currently
+      undergoing scheduled maintenance.
+    </p>
+    <div style="
+      background:#B6CFB6;
+      color:#17251E;
+      padding:13px;
+      border-radius:10px;
+      margin-top:24px;
+      font-weight:bold;
+    ">
+      System Update in Progress
+    </div>
+    <p style="font-size:13px;color:#B6CFB6;margin-top:20px">
+      Thank you for your patience!
+    </p>
+  </div>
+</div>
+
+<script>
+  const MAINTENANCE_MODE = true;
+
+  document.getElementById('maintenanceScreen').style.display =
+    MAINTENANCE_MODE ? 'flex' : 'none';
+</script>
+<!-- END MAINTENANCE SCREEN -->
+
+
+
+
+
+ 
 <header>
 <h1>🍽️ Carenderia De Pantaleon</h1>
 <div style="display:flex;align-items:center;gap:10px">
