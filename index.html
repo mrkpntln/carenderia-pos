@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#20372e"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><title>CDP | Carenderia De Pantaleon</title>
+<meta name="theme-color" content="#20372e"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="manifest" href="./manifest.json"><link rel="apple-touch-icon" href="./icon-192-v2.png"><title>CDP | Carenderia De Pantaleon</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
 <style>
 :root{--gold:#f5bd16;--gold-dark:#e4a900;--ink:#171b20;--muted:#73777d;--line:#e5e5e5;--paper:#fff;--soft:#fafafa;--red:#c82932}
@@ -575,6 +575,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .receipt-line>strong:last-child{white-space:nowrap;flex:0 0 auto;}
 .receipt-line>span:first-child{min-width:0;flex:1 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 @media print{.receipt-line{flex-wrap:nowrap!important;white-space:nowrap!important}.receipt-line>strong:last-child{white-space:nowrap!important;flex-shrink:0!important}.receipt-line>span:first-child{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}}
+/* Recent Orders: make receipt number easy to identify */
+.admin-order-receipt{font-size:12px;color:#667168;margin-top:5px;line-height:1.35}
+.admin-order-receipt strong{color:#203d30;font-weight:850;letter-spacing:.02em}
 </style>
 </head>
 <body>
@@ -1016,7 +1019,7 @@ async function loadAdminTab(tab){
 }
 function formatDateTime12(value){return new Date(value).toLocaleString("en-PH",{timeZone:"Asia/Manila",year:"numeric",month:"short",day:"2-digit",hour:"numeric",minute:"2-digit",hour12:true});}
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function renderOrderCards(rows,items,showItems=true){return `<div class="admin-order-list">${rows.map(o=>{const names=items.filter(i=>i.order_id===o.id).map(i=>`${i.product_name||"Item"} ×${i.quantity||1}`).join(", ")||"Order items";return `<article class="admin-order-card"><div>${showItems?`<div class="admin-order-items">${escapeHtml(names)}</div>`:""}<div class="admin-order-meta">${formatDateTime12(o.created_at)}</div></div><div class="admin-order-total">${money(o.total)}</div><button class="admin-order-print" data-print-order="${o.id}">Print</button></article>`}).join("")||'<div class="admin-empty">No orders today.</div>'}</div>`}
+function renderOrderCards(rows,items,showItems=true){return `<div class="admin-order-list">${rows.map(o=>{const names=items.filter(i=>i.order_id===o.id).map(i=>`${i.product_name||"Item"} ×${i.quantity||1}`).join(", ")||"Order items";const receiptNo=o.receipt_no||"No receipt number";return `<article class="admin-order-card"><div>${showItems?`<div class="admin-order-items">${escapeHtml(names)}</div>`:""}<div class="admin-order-receipt">Receipt No.: <strong>${escapeHtml(receiptNo)}</strong></div><div class="admin-order-meta">${formatDateTime12(o.created_at)}</div></div><div class="admin-order-total">${money(o.total)}</div><button class="admin-order-print" data-print-order="${o.id}">Print</button></article>`}).join("")||'<div class="admin-empty">No orders today.</div>'}</div>`}
 function printReport(title,rows,headers){const win=window.open("","_blank","width=700,height=800");if(!win){notify("Allow pop-ups to print this list.");return}win.document.write(`<html><head><title>${title}</title><style>body{font:14px Arial;padding:24px}h2{margin-bottom:16px}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:10px;border-bottom:1px solid #ddd}
 /* Cashier menu cards: taller image, compact item name and price; no description */
 .product{justify-content:flex-start;gap:0;min-height:0}
@@ -1226,7 +1229,7 @@ window.addEventListener("online",async()=>{
  updateOfflineStatus();
 });
 $("syncPendingBtn").onclick=syncPendingOrders;
-if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(e=>console.warn("CDP service worker registration failed",e));
+if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./service-worker.js",{scope:"./"}).catch(e=>console.warn("CDP service worker registration failed",e));
 (async()=>{const {data:{session}}=await sb.auth.getSession();if(session?.user)showApp(session.user);else showLogin();sb.auth.onAuthStateChange((_event,session)=>{if(session?.user)showApp(session.user);else showLogin()})})();
 
 /* Cashier flow: choose menu items, then Save -> Dine In (select/merge Table 1–11) or Take Out (separate queue order). Queue offers Pay or Remove. */
