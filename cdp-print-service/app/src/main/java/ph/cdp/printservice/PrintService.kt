@@ -45,7 +45,7 @@ class PrintService : Service() {
             ACTION_DISCONNECT -> {
                 closePrinter()
                 updateNotification("Printer disconnected")
-                if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE) else @Suppress("DEPRECATION") stopForeground(true)
+                if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE) else stopForeground(true)
                 stopSelf()
             }
         }
