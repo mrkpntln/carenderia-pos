@@ -34,7 +34,6 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         adapter = BluetoothAdapter.getDefaultAdapter()
         buildScreen()
-        handleDeepLink(intent)
         requestBluetoothPermissionIfNeeded()
         refreshDevices()
     }
@@ -168,51 +167,28 @@ class MainActivity : Activity() {
         val device = selectedDevice
         if (device == null) { setStatus("Select a paired printer first."); return }
         if (!hasConnectPermission()) { requestBluetoothPermissionIfNeeded(); return }
-        setStatus("Connecting to printer…")
-        thread {
-            try {
-                try { adapter?.cancelDiscovery() } catch (_: Exception) {}
-                val s = device.createRfcommSocketToServiceRecord(sppUuid)
-                s.connect()
-                socket = s
-                output = s.outputStream
-                runOnUiThread {
-                    setStatus("Connected to printer · Bluetooth SPP")
-                    pendingPayload?.let { pendingPayload = null; printPayload(it) }
-                }
-            } catch (e: Exception) {
-                try { socket?.close() } catch (_: Exception) {}
-                socket = null
-                output = null
-                runOnUiThread { setStatus("Connection failed: ${e.message ?: "SPP unavailable"}. Confirm printer protocol and pairing.") }
-            }
+        val serviceIntent = Intent(this, PrintService::class.java).apply {
+            action = PrintService.ACTION_CONNECT
+            putExtra(PrintService.EXTRA_MAC, device.address)
         }
+        startPrinterService(serviceIntent)
+        setStatus("Starting background printer connection…")
     }
 
     private fun disconnectPrinter() {
-        thread {
-            try { output?.close() } catch (_: Exception) {}
-            try { socket?.close() } catch (_: Exception) {}
-            output = null
-            socket = null
-            runOnUiThread { setStatus("Disconnected") }
-        }
+        val serviceIntent = Intent(this, PrintService::class.java).apply { action = PrintService.ACTION_DISCONNECT }
+        startPrinterService(serviceIntent)
+        setStatus("Disconnect requested")
     }
 
     private fun printTest() {
-        val test = JSONObject().apply {
-            put("protocol", "cdp-print-v1")
-            put("receipt", JSONObject().apply {
-                put("receipt", "CDP-TEST")
-                put("date", Date().toString())
-                put("total", 1.0); put("cash", 1.0); put("change", 0.0); put("test", true)
-                put("items", org.json.JSONArray().put(JSONObject().apply {
-                    put("name", "Printer test"); put("quantity", 1); put("lineTotal", 1.0)
-                }))
-            })
-        }
-        if (output == null) { setStatus("Connect to the printer before testing."); return }
-        printPayload(test)
+        val serviceIntent = Intent(this, PrintService::class.java).apply { action = PrintService.ACTION_TEST }
+        startPrinterService(serviceIntent)
+        setStatus("Sending test receipt…")
+    }
+
+    private fun startPrinterService(serviceIntent: Intent) {
+        if (Build.VERSION.SDK_INT >= 26) startForegroundService(serviceIntent) else startService(serviceIntent)
     }
 
     private fun handleDeepLink(intent: Intent?) {
