@@ -915,8 +915,20 @@ async function loadAdminTab(tab){
   const {data:orders,error}=await sb.from("orders").select("id,receipt_no,total,created_at").order("created_at",{ascending:false}).limit(120);
   if(error){host.innerHTML='<div class="admin-section">Unable to load dashboard data.</div>';return}
   const all=orders||[];window.__cdpOrderCache=all;const todayKey=new Date().toDateString(),today=all.filter(o=>new Date(o.created_at).toDateString()===todayKey),sum=a=>a.reduce((n,o)=>n+Number(o.total||0),0);
-  const ids=all.slice(0,8).map(o=>o.id);let itemRows=[];if(ids.length){const q=await sb.from("order_items").select("order_id,product_name,quantity").in("order_id",ids);if(!q.error)itemRows=q.data||[];}
+  const ids=all.map(o=>o.id);let itemRows=[];if(ids.length){const q=await sb.from("order_items").select("order_id,product_name,quantity").in("order_id",ids);if(!q.error)itemRows=q.data||[];}
   host.innerHTML=`<div class="admin-stats"><div class="admin-stat"><span>TODAY'S SALES</span><strong>${money(sum(today))}</strong></div><div class="admin-stat"><span>TODAY'S ORDERS</span><strong>${today.length}</strong></div><div class="admin-stat"><span>RECENT ORDERS</span><strong>${all.length}</strong></div><div class="admin-stat"><span>AVERAGE ORDER</span><strong>${money(all.length?sum(all)/all.length:0)}</strong></div></div><div class="admin-section"><h2>Recent Orders</h2>${renderOrderCards(all.slice(0,8),itemRows)}</div>`;
+  const recentSection=host.querySelector('.admin-section');
+  const recentHeading=recentSection?.querySelector('h2');
+  if(recentSection&&recentHeading){
+   const search=document.createElement('input');search.type='search';search.id='recentReceiptSearch';search.placeholder='Search receipt number...';search.setAttribute('aria-label','Search receipt number');
+   search.style.cssText='width:min(280px,100%);padding:11px 13px;border:1px solid #dfe5dc;border-radius:10px;background:#fff';
+   const toolbar=document.createElement('div');toolbar.className='admin-toolbar';toolbar.style.marginBottom='12px';
+   recentHeading.style.margin='0 auto 0 0';toolbar.append(recentHeading,search);recentSection.insertBefore(toolbar,recentSection.firstChild);
+   const results=document.createElement('div');results.id='recentOrdersResults';
+   const currentList=recentSection.querySelector('.admin-order-list');if(currentList)results.append(currentList);recentSection.append(results);
+   const hint=document.createElement('p');hint.style.cssText='font-size:12px;color:#778078;margin:10px 2px 0';hint.textContent='Showing the 8 most recent orders. Search receipt number to find a transaction in the latest '+all.length+' orders.';recentSection.append(hint);
+   search.addEventListener('input',()=>{const term=search.value.trim().toLowerCase();const matches=term?all.filter(o=>String(o.receipt_no||'').toLowerCase().includes(term)):all.slice(0,8);results.innerHTML=renderOrderCards(matches,itemRows);hint.textContent=term?matches.length+' matching order(s) found in the latest '+all.length+' orders.':'Showing the 8 most recent orders. Search receipt number to find a transaction in the latest '+all.length+' orders.';});
+  }
  }else if(tab==="products"){
   const [pr,cr]=await Promise.all([sb.from("products").select("*").order("name"),sb.from("categories").select("*").order("sort_order")]);
   if(pr.error||cr.error){host.innerHTML='<div class="admin-section">Unable to load products.</div>';return}
