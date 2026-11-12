@@ -13,6 +13,7 @@ import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import java.util.UUID
 import kotlin.concurrent.thread
 
@@ -77,7 +78,8 @@ class PrintService : Service() {
 
     private fun printPayload(payload: JSONObject) {
         val receipt = payload.optJSONObject("receipt") ?: run { updateNotification("Invalid receipt payload"); return }
-        val bytes = buildEscPos(receipt)
+        val branding = payload.optJSONObject("branding") ?: JSONObject()
+        val bytes = buildEscPos(receipt, branding)
         thread {
             try {
                 var stream = output
@@ -95,7 +97,7 @@ class PrintService : Service() {
                 }
                 stream.write(bytes)
                 stream.flush()
-                updateNotification("Receipt printed successfully")
+                updateNotification("Payment slip printed successfully")
             } catch (e: Exception) {
                 updateNotification("Print failed: ${e.message ?: "unknown error"}")
             }
@@ -109,12 +111,24 @@ class PrintService : Service() {
         socket = null
     }
 
-    private fun testPayload() = JSONObject().put("protocol", "cdp-print-v1").put("receipt",
-        JSONObject().put("receipt", "CDP-TEST").put("date", Date().toString()).put("total", 1.0)
-            .put("cash", 1.0).put("change", 0.0).put("items",
-                org.json.JSONArray().put(JSONObject().put("name", "Printer test").put("quantity", 1).put("lineTotal", 1.0))))
+    private fun testPayload() = JSONObject()
+        .put("protocol", "cdp-print-v1")
+        .put("branding", JSONObject()
+            .put("businessName", "CARENDERIA DE PANTALEON")
+            .put("businessAddress", "Lianga, Surigao del Sur")
+            .put("receiptTitle", "PAYMENT SLIP")
+            .put("statusLabel", "NON-OFFICIAL · INTERNAL TRANSACTION RECORD")
+            .put("footer", "Thank you! Come again."))
+        .put("receipt", JSONObject()
+            .put("receipt", "CDP-TEST")
+            .put("date", Date().toString())
+            .put("total", 1.0)
+            .put("cash", 1.0)
+            .put("change", 0.0)
+            .put("items", org.json.JSONArray().put(JSONObject()
+                .put("name", "Printer test").put("quantity", 1).put("lineTotal", 1.0))))
 
-    private fun buildEscPos(r: JSONObject): ByteArray {
+    private fun buildEscPos(r: JSONObject, branding: JSONObject): ByteArray {
         val data = ArrayList<Byte>()
         fun raw(vararg b: Int) { b.forEach { data.add(it.toByte()) } }
         fun txt(s: String) { s.toByteArray(Charsets.UTF_8).forEach { data.add(it) } }
@@ -122,27 +136,67 @@ class PrintService : Service() {
         fun center() { raw(0x1B, 0x61, 1) }
         fun left() { raw(0x1B, 0x61, 0) }
         fun bold(on: Boolean) { raw(0x1B, 0x45, if (on) 1 else 0) }
-        raw(0x1B, 0x40); center(); bold(true); raw(0x1D, 0x21, 0x11); line("CDP")
-        raw(0x1D, 0x21, 0); bold(false); line("Carenderia De Pantaleon"); line("OFFICIAL RECEIPT")
-        left(); line("--------------------------------")
-        line("Receipt: ${r.optString("receipt", "TEST")}")
-        if (r.optBoolean("offline")) line("OFFLINE RECEIPT")
+        fun textSize(width: Int, height: Int) {
+            raw(0x1D, 0x21, ((width - 1) shl 4) or (height - 1))
+        }
+        fun money(value: Double) = "PHP " + "%.2f".format(Locale.US, value)
+        fun formatDate(value: String): String {
+            if (value.isBlank()) return SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()).format(Date())
+            return try {
+                val input = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
+                val parsed = input.parse(value) ?: return value
+                SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()).format(parsed)
+            } catch (_: Exception) { value }
+        }
+
+        val businessName = branding.optString("businessName", "CARENDERIA DE PANTALEON")
+        val address = branding.optString("businessAddress", "Lianga, Surigao del Sur")
+        val title = branding.optString("receiptTitle", "PAYMENT SLIP")
+        val statusLabel = branding.optString("statusLabel", "NON-OFFICIAL · INTERNAL TRANSACTION RECORD")
+        val footer = branding.optString("footer", "Thank you! Come again.")
+
+        raw(0x1B, 0x40)
+        center()
+        bold(true)
+        textSize(1, 1)
+        line(businessName)
+        bold(false)
+        if (address.isNotBlank()) line(address)
+        line(title)
+        line(statusLabel)
+        line("--------------------------------")
+        left()
+        line("Receipt No.: ${r.optString("receipt", "TEST")}")
+        if (r.optBoolean("offline")) line("OFFLINE TRANSACTION")
         if (r.optString("orderLabel").isNotBlank()) line(r.optString("orderLabel"))
         else if (r.optInt("tableNo", 0) > 0) line("Table ${r.optInt("tableNo")}")
-        line("Date: ${r.optString("date", SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date()))}")
+        line("Date: ${formatDate(r.optString("date"))}")
         line("--------------------------------")
+
         val items = r.optJSONArray("items")
         if (items != null) for (i in 0 until items.length()) {
             val item = items.optJSONObject(i) ?: continue
-            line(item.optString("name", "Item").take(30))
-            line("  ${item.optInt("quantity", 1)} x                   ${"%.2f".format(Locale.US, item.optDouble("lineTotal", 0.0))}")
+            val name = item.optString("name", "Item")
+            val qty = item.optInt("quantity", 1)
+            val amount = item.optDouble("lineTotal", 0.0)
+            line(name.take(32))
+            line("  ${qty} x                         ${"%.2f".format(Locale.US, amount)}")
         }
-        line("--------------------------------"); bold(true)
-        line("TOTAL: PHP ${"%.2f".format(Locale.US, r.optDouble("total", 0.0))}"); bold(false)
-        line("Cash:  PHP ${"%.2f".format(Locale.US, r.optDouble("cash", 0.0))}")
-        line("Change: PHP ${"%.2f".format(Locale.US, r.optDouble("change", 0.0))}")
-        line("--------------------------------"); center(); line("Thank you!"); line("Please come again.")
-        line(); line(); line(); raw(0x1D, 0x56, 0)
+
+        line("--------------------------------")
+        bold(true)
+        line("TOTAL: ${money(r.optDouble("total", 0.0))}")
+        bold(false)
+        if (r.has("cash") && !r.isNull("cash")) line("CASH:   ${money(r.optDouble("cash"))}")
+        if (r.has("change") && !r.isNull("change")) line("CHANGE: ${money(r.optDouble("change"))}")
+        line("--------------------------------")
+        center()
+        line(statusLabel)
+        line("NOT A BIR SALES INVOICE")
+        line(footer)
+        line()
+        line()
+        raw(0x1D, 0x56, 0)
         return data.toByteArray()
     }
 
