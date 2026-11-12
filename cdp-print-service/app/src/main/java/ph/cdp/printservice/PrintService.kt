@@ -163,7 +163,6 @@ class PrintService : Service() {
         bold(false)
         if (address.isNotBlank()) line(address)
         line(title)
-        line(statusLabel)
         line("--------------------------------")
         left()
         line("Receipt No.: ${r.optString("receipt", "TEST")}")
@@ -180,7 +179,10 @@ class PrintService : Service() {
             val qty = item.optInt("quantity", 1)
             val amount = item.optDouble("lineTotal", 0.0)
             line(name.take(32))
-            line("  ${qty} x                         ${"%.2f".format(Locale.US, amount)}")
+            val quantityLabel = "  ${qty} x"
+            val amountLabel = "%.2f".format(Locale.US, amount)
+            val gap = (32 - quantityLabel.length - amountLabel.length).coerceAtLeast(1)
+            line(quantityLabel + " ".repeat(gap) + amountLabel)
         }
 
         line("--------------------------------")
