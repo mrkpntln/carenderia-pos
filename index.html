@@ -229,11 +229,12 @@ header{display:none}#app{min-height:100dvh;padding-bottom:126px}.layout{display:
  @page{size:58mm auto;margin:2mm}
  html,body{width:58mm!important;margin:0!important;padding:0!important;background:#fff!important}
  #receipt{position:absolute!important;inset:0!important;display:block!important;background:#fff!important;padding:0!important;width:58mm!important}
- .receipt-card{width:54mm!important;max-width:54mm!important;margin:0!important;padding:2mm!important;border:0!important;border-radius:0!important;box-shadow:none!important;font:10px/1.3 Arial,sans-serif!important}
- .receipt-card h2{font-size:16px!important}
- .receipt-card p{font-size:9px!important;margin:2px 0 8px!important}
- .receipt-line{font-size:9px!important;gap:4px}
- .receipt-lines{margin:7px 0!important;padding:6px 0!important}
+ .receipt-card{width:54mm!important;max-width:54mm!important;margin:0!important;padding:1.5mm!important;border:0!important;border-radius:0!important;box-shadow:none!important;font:9px/1.15 Arial,sans-serif!important}
+ .receipt-card h2{font-size:12px!important;line-height:1.15!important;letter-spacing:0!important;margin:0 0 2px!important}
+ .receipt-card .receipt-subtitle{font-size:8px!important;line-height:1.15!important;margin:0 0 4px!important}
+ .receipt-line{font-size:8.5px!important;line-height:1.15!important;gap:3px!important;margin:2px 0!important}
+ .receipt-lines{margin:4px 0!important;padding:3px 0!important}
+ .receipt-footer{font-size:8px!important;line-height:1.15!important;margin-top:4px!important}
  .receipt-actions{display:none!important}
  body *{visibility:hidden!important}
  #receipt,#receipt *{visibility:visible!important}
@@ -306,7 +307,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .toast{border:1px solid #ffffff20;box-shadow:0 8px 24px #101b1540}
 /* Receipt */
 .receipt-card{border-radius:18px;box-shadow:0 18px 55px #101b1530}
-.receipt-card h2{color:var(--cdp-green);letter-spacing:1px}
+.receipt-card h2{color:var(--cdp-green);letter-spacing:0;font-size:16px;line-height:1.2}.receipt-card .receipt-subtitle{margin:3px 0 8px;font-size:11px;line-height:1.25}.receipt-footer{text-align:center;font-size:10px;line-height:1.2;margin-top:7px}
 /* Admin */
 #adminPanel{background:#f4f6f2!important}
 .admin-head{border-color:#e5eae3;box-shadow:0 5px 18px #203d3008}
@@ -644,7 +645,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   </div>
  </div>
 </div>
-<div id="receipt" class="hidden"><div class="receipt-card"><h2>CDP</h2><p>Carenderia De Pantaleon<br>Official Receipt</p><div id="receiptBody"></div><div class="receipt-actions"><button class="secondary" id="closeReceipt">Close</button><button class="primary" id="printReceipt">Print receipt</button></div></div></div>
+<div id="receipt" class="hidden"><div class="receipt-card"><h2>CARENDERIA DE PANTALEON</h2><p class="receipt-subtitle">Lianga, Surigao del Sur<br><strong>PAYMENT SLIP · NON-OFFICIAL</strong></p><div id="receiptBody"></div><div class="receipt-actions"><button class="secondary" id="closeReceipt">Close</button><button class="primary" id="printReceipt">Print payment slip</button></div></div></div>
 <div id="adminDialog" class="admin-dialog hidden"><div class="admin-dialog-card"><div class="admin-dialog-head"><h2 id="adminDialogTitle">Add item</h2><button type="button" class="admin-dialog-close" id="adminDialogClose">×</button></div><form id="adminDialogForm"><div id="adminDialogFields" class="admin-dialog-form"></div><div class="admin-dialog-actions"><button type="button" class="secondary" id="adminDialogCancel">Cancel</button><button type="submit" class="primary">Save</button></div></form></div></div>
 
 <div id="orderTypeModal" class="queue-overlay hidden">
@@ -1095,7 +1096,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .toast{border:1px solid #ffffff20;box-shadow:0 8px 24px #101b1540}
 /* Receipt */
 .receipt-card{border-radius:18px;box-shadow:0 18px 55px #101b1530}
-.receipt-card h2{color:var(--cdp-green);letter-spacing:1px}
+.receipt-card h2{color:var(--cdp-green);letter-spacing:0;font-size:16px;line-height:1.2}.receipt-card .receipt-subtitle{margin:3px 0 8px;font-size:11px;line-height:1.25}.receipt-footer{text-align:center;font-size:10px;line-height:1.2;margin-top:7px}
 /* Admin */
 #adminPanel{background:#f4f6f2!important}
 .admin-head{border-color:#e5eae3;box-shadow:0 5px 18px #203d3008}
@@ -1142,7 +1143,29 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 </style>
 
 </head><body><h2>${title}</h2><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(v=>`<td>${escapeHtml(v)}</td>`).join("")}</tr>`).join("")}</tbody></table></body></html>`);win.document.close();win.focus();win.print()}
-document.addEventListener("click",async e=>{const b=e.target.closest("[data-print-order]");if(!b)return;const id=b.dataset.printOrder;const o=window.__cdpOrderCache?.find(x=>String(x.id)===String(id));if(!o){notify("Order details are unavailable. Refresh the Admin page and try again.");return}b.disabled=true;const {data,error}=await sb.from("order_items").select("product_name,quantity,line_total").eq("order_id",id);b.disabled=false;if(error){notify(error.message);return}const items=(data||[]).map(x=>({product_name:x.product_name||"Item",quantity:Number(x.quantity||1),line_total:Number(x.line_total||0),unit_price:Number(x.quantity||0)?Number(x.line_total||0)/Number(x.quantity):0}));if(!items.length){notify("No items found for this order.");return}const receipt={receipt:o.receipt_no||String(o.id),date:o.created_at,items,total:Number(o.total||0),cash:Number(o.total||0),change:0,orderType:"dinein"};cdpPrintServiceSend(receipt,{allowBrowserFallback:false});});
+document.addEventListener("click",async e=>{
+ const b=e.target.closest("[data-print-order]");if(!b)return;
+ const id=b.dataset.printOrder;b.disabled=true;b.textContent="...";
+ try{
+  const [orderResult,itemResult]=await Promise.all([
+   sb.from("orders").select("*").eq("id",id).single(),
+   sb.from("order_items").select("*").eq("order_id",id)
+  ]);
+  if(orderResult.error)throw orderResult.error;
+  if(itemResult.error)throw itemResult.error;
+  const o=orderResult.data||{},rows=itemResult.data||[],total=Number(o.total||0);
+  const receipt={
+   receipt:o.receipt_no||String(o.id||id).slice(0,8).toUpperCase(),
+   date:o.created_at?new Date(o.created_at):new Date(),
+   items:rows.map(x=>({product_name:x.product_name||x.name||"Item",quantity:Number(x.quantity||1),unit_price:Number(x.unit_price??x.price??0),line_total:Number(x.line_total??(Number(x.unit_price??x.price??0)*Number(x.quantity||1)))})),
+   total,cash:o.cash_received??o.cash??null,change:o.change_due??o.change??null,
+   orderType:o.order_type||"dinein",orderLabel:o.order_label||null,tableNo:o.table_no||null
+  };
+  renderReceipt(receipt);$("receipt").classList.remove("hidden");
+  cdpPrintServiceSend(receipt,{allowBrowserFallback:false});
+ }catch(err){console.error("Admin reprint failed:",err);notify("Could not reprint order: "+(err.message||"unknown error"))}
+ finally{b.disabled=false;b.textContent="Print"}
+});
 document.querySelectorAll("[data-admin-tab]").forEach(b=>b.addEventListener("click",()=>loadAdminTab(b.dataset.adminTab)));
 
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();const btn=$("loginBtn"),err=$("loginError");btn.disabled=true;btn.textContent="Signing in...";err.textContent="";try{const {data,error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error)throw error;if(!data?.user)throw new Error("Login did not return a user.");showApp(data.user)}catch(error){console.error("CDP login error:",error);err.textContent=error.message||"Unable to sign in."}finally{btn.disabled=false;btn.textContent="Sign in"}});
@@ -1176,14 +1199,15 @@ function cdpPrintServiceSend(receipt, options={}){
  const payload={
   protocol:"cdp-print-v1",source:"CDP POS",
   printer:{connection:settings.connection||"Bluetooth",paper:settings.paper||"58mm"},
+  branding:{businessName:"CARENDERIA DE PANTALEON",businessAddress:"Lianga, Surigao del Sur",receiptTitle:"PAYMENT SLIP",statusLabel:"NON-OFFICIAL · INTERNAL TRANSACTION RECORD",footer:"Thank you! Come again."},
   receipt:{
    receipt:String(receipt.receipt??""),
    date:receipt.date instanceof Date?receipt.date.toISOString():String(receipt.date||new Date().toISOString()),
    orderType:receipt.orderType||"dinein",orderLabel:receipt.orderLabel||null,tableNo:receipt.tableNo||null,
    offline:!!receipt.offline,test:!!receipt.test,
    items:(receipt.items||[]).map(i=>({name:String(i.product_name||i.name||"Item"),quantity:Number(i.quantity||1),unitPrice:Number(i.unit_price??i.price??0),lineTotal:Number(i.line_total??(Number(i.unit_price??i.price??0)*Number(i.quantity||1)))})),
-   total:Number(receipt.total||0),cash:Number(receipt.cash||0),change:Number(receipt.change||0)
-  },display:{business:settings.business!==false,date:settings.date!==false,cash:settings.cash!==false}
+   total:Number(receipt.total||0),cash:receipt.cash==null?null:Number(receipt.cash),change:receipt.change==null?null:Number(receipt.change)
+  },display:{business:settings.business!==false,date:settings.date!==false,cash:settings.cash!==false,hasPaymentBreakdown:receipt.cash!=null&&receipt.change!=null}
  };
  try{
   sessionStorage.setItem("cdpPrintLastPayload",JSON.stringify(payload));
@@ -1201,7 +1225,7 @@ function cdpPrintServiceSend(receipt, options={}){
 function cdpBrowserPrintFallback(paper="58mm"){
  let style=document.getElementById("cdpPrintPaperStyle");
  if(!style){style=document.createElement("style");style.id="cdpPrintPaperStyle";document.head.appendChild(style)}
- style.textContent=`@media print{@page{size:${paper} auto;margin:2mm}.receipt-card{width:${paper==="58mm"?"54mm":"76mm"}!important;max-width:${paper==="58mm"?"54mm":"76mm"}!important;margin:0 auto!important;padding:3mm!important}}`;
+ style.textContent=`@media print{@page{size:${paper} auto;margin:2mm}.receipt-card{width:${paper==="58mm"?"54mm":"76mm"}!important;max-width:${paper==="58mm"?"54mm":"76mm"}!important;margin:0 auto!important;padding:1.5mm!important}}`;
  window.print();
 }
 window.CDPPrintService={
@@ -1212,12 +1236,18 @@ window.CDPPrintService={
 
 function renderReceipt(r){
  const body=$("receiptBody");body.innerHTML="";
- const meta=document.createElement("div");meta.className="receipt-line";meta.textContent=(r.offline?"OFFLINE RECEIPT #":"Receipt #")+(r.receipt??"TEST");body.append(meta);
+ const addLine=(label,value,strong=false)=>{const line=document.createElement("div");line.className="receipt-line";const a=document.createElement(strong?"strong":"span");a.textContent=label;const b=document.createElement("strong");b.textContent=value;line.append(a,b);body.append(line)};
+ const meta=document.createElement("div");meta.className="receipt-line";meta.textContent="Receipt No.: "+(r.receipt??"TEST");body.append(meta);
  if(r.orderType==="takeout"||r.orderLabel){const kind=document.createElement("div");kind.className="receipt-line";kind.textContent=r.orderLabel||"TAKE OUT";body.append(kind)}else if(r.tableNo){const table=document.createElement("div");table.className="receipt-line";table.textContent="Table "+r.tableNo;body.append(table)}
  const date=document.createElement("div");date.className="receipt-line";date.textContent=formatDateTime12(r.date||new Date());body.append(date);
  const lines=document.createElement("div");lines.className="receipt-lines";
- (r.items||[]).forEach(i=>{const line=document.createElement("div");line.className="receipt-line";const a=document.createElement("span");a.textContent=(i.product_name||i.name||"Item")+" × "+(i.quantity||1);const b=document.createElement("strong");b.textContent=money(i.line_total??(Number(i.unit_price||i.price||0)*Number(i.quantity||1)));line.append(a,b);lines.append(line)});body.append(lines);
- [["TOTAL",money(r.total||0)],["CASH",money(r.cash||0)],["CHANGE",money(r.change||0)]].forEach(([a,b])=>{const l=document.createElement("div");l.className="receipt-line";const x=document.createElement("strong");x.textContent=a;const y=document.createElement("strong");y.textContent=b;l.append(x,y);body.append(l)});
+ (r.items||[]).forEach(i=>{const line=document.createElement("div");line.className="receipt-line";const a=document.createElement("span");a.textContent=(i.product_name||i.name||"Item")+" ×"+(i.quantity||1);const b=document.createElement("strong");b.textContent=money(i.line_total??(Number(i.unit_price??i.price??0)*Number(i.quantity||1)));line.append(a,b);lines.append(line)});body.append(lines);
+ addLine("TOTAL",money(r.total||0),true);
+ if(r.cash!==undefined&&r.cash!==null)addLine("CASH",money(r.cash));
+ if(r.change!==undefined&&r.change!==null)addLine("CHANGE",money(r.change));
+ const footer=document.createElement("div");footer.className="receipt-footer";
+ footer.innerHTML='<div style="text-align:center;font-weight:700;margin-top:5px">NON-OFFICIAL · INTERNAL TRANSACTION RECORD</div><div style="text-align:center;margin-top:3px">NOT A BIR SALES INVOICE</div><div style="text-align:center;margin-top:4px">Thank you! Come again.</div>';
+ body.append(footer);
 }
 window.addEventListener("offline",()=>{
  if(currentRole==="admin"){showLogin();$("loginError").textContent="Admin access requires an internet connection. Offline mode is cashier-only."}
