@@ -777,7 +777,7 @@ function renderCategories(){
  const wrap=$("categories");wrap.innerHTML="";
  const home=document.createElement("button");home.className="side-cat"+(stage==="main"&&activeCategory==="home"?" active":"");home.innerHTML='<span class="cat-icon">⌂</span><span>HOME</span>';home.onclick=()=>{stage="main";activeCategory="home";renderCategories();renderProducts();updateStageButtons()};wrap.append(home);
  const list=stage==="main"?categories.filter(c=>(c.category_type|| (isAddonCategory(c.name)?"addon":"main"))==="main"):categories.filter(c=>(c.category_type|| (isAddonCategory(c.name)?"addon":"main"))==="addon");
- list.forEach((c,i)=>{const b=document.createElement("button");b.className="side-cat"+(activeCategory===c.id?" active":"");b.innerHTML=`<span class="cat-icon">${["🍖","🍗","🥩","🐟","🥤","🍚","🍎","🍰"][i%8]}</span><span></span>`;b.querySelector("span:last-child").textContent=c.name;b.onclick=()=>{activeCategory=c.id;renderCategories();renderProducts()};wrap.append(b)});
+ list.forEach((c,i)=>{const b=document.createElement("button");b.className="side-cat"+(activeCategory===c.id?" active":"");b.innerHTML="<span></span>";b.querySelector("span:last-child").textContent=c.name;b.onclick=()=>{activeCategory=c.id;renderCategories();renderProducts()};wrap.append(b)});
  if(stage==="main" && currentRole==="admin"){
   const manage=document.createElement("div");manage.style.cssText="display:grid;gap:5px;margin-top:10px";
   const add=document.createElement("button");add.className="side-cat";add.textContent="+ Add Category";add.onclick=addCategory;
